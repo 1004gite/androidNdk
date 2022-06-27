@@ -97,6 +97,80 @@ Java_com_example_androidndk_MainActivity_bitmapBright(
         __android_log_print(ANDROID_LOG_ERROR,"bitmapUnlockErr", "bitmap unlock error");
     }
 }
+
+
+/**
+ * Details
+ * The ssd_mobilenet_v1_1_metadata_1.
+ * tflite file's input takes normalized 300x300x3 shape image.
+ * */
+JNIEXPORT jbyteArray JNICALL
+Java_com_example_androidndk_tensorFlow_CameraFragment_bitmapToByteArray(
+        JNIEnv *env,
+        jobject,
+        jobject bitmap,
+        jint w,jint h,jint targetW,jint targetH
+){
+    double ratioW = (double)w/(double )targetW;
+    double ratioH = (double )h/(double )targetH;
+
+    jbyteArray result = env->NewByteArray(targetW*targetH*3);
+    jbyte *resultP = env->GetByteArrayElements(result,NULL);
+
+    AndroidBitmapInfo bitmapInfo;
+    if (AndroidBitmap_getInfo(env, bitmap, &bitmapInfo) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        // fail
+        __android_log_print(ANDROID_LOG_ERROR,"bitmapInfoErr", "bitmap info error");
+        return result;
+    }
+
+    uint8_t *pbmp = nullptr;
+    if (AndroidBitmap_lockPixels(env, bitmap,(void **) &pbmp) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        __android_log_print(ANDROID_LOG_ERROR,"bitmaplockErr", "bitmap lock error");
+        return result;
+    }
+
+    // for normalization
+    uint8_t R=0,G=0,B=0; // MAX
+    uint8_t r=255,g=255,b=255; // MIN
+    for(int row = 0; row < targetH; row++){
+        uint8_t *pixel = pbmp + ((int)((double )row*ratioH) * bitmapInfo.stride);
+        for(int col = 0; col < targetW; col++){
+            uint8_t *tmp = pixel + (int)((double )col*ratioW)*4;
+            tmp[0] = tmp[0] > R ? tmp[0] : R;
+            tmp[1] = tmp[1] > G ? tmp[1] : G;
+            tmp[2] = tmp[2] > B ? tmp[2] : B;
+            tmp[0] = tmp[0] < r ? tmp[0] : r;
+            tmp[1] = tmp[1] < g ? tmp[1] : g;
+            tmp[2] = tmp[2] < b ? tmp[2] : b;
+        }
+    }
+    uint8_t ratioR = (uint8_t)(255.0/(double )(R-r+1));
+    uint8_t ratioG = (uint8_t)(255.0/(double )(G-g+1));
+    uint8_t ratioB = (uint8_t)(255.0/(double )(B-b+1));
+
+    for(int row = 0; row < targetH; row++){
+        uint8_t *pixel = pbmp + ((int)((float)row*ratioH) * bitmapInfo.stride);
+        for(int col = 0; col < targetW; col++){
+            uint8_t *tmp = pixel + (int)((float )col*ratioW)*4;
+            uint8_t *targetP = reinterpret_cast<uint8_t *>(resultP + targetW * row + col * 3);
+            targetP[0] = (tmp[0]-r)*ratioR;
+            targetP[1] = (tmp[1]-g)*ratioG;
+            targetP[2] = (tmp[2]-b)*ratioB;
+//            resultP[targetW*row + col*3 + 0] = tmp[0];
+//            resultP[targetW*row + col*3 + 1] = tmp[1];
+//            resultP[targetW*row + col*3 + 2] = tmp[2];
+        }
+    }
+    env->ReleaseByteArrayElements(result,resultP,0);
+
+    if (AndroidBitmap_unlockPixels(env, bitmap) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        __android_log_print(ANDROID_LOG_ERROR,"bitmapUnlockErr", "bitmap unlock error");
+    }
+
+    return result;
+}
+
 }
 
 //typedef struct {

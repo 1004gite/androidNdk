@@ -1,4 +1,4 @@
-package com.example.androidndk
+package com.example.androidndk.tensorFlow
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle

@@ -1,16 +1,16 @@
 package com.example.androidndk
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.widget.ArrayAdapter
-import android.widget.SimpleAdapter
-import android.widget.TextView
+import androidx.core.app.ActivityCompat
 import androidx.core.graphics.drawable.toBitmap
-import androidx.core.view.drawToBitmap
 import com.example.androidndk.databinding.ActivityMainBinding
+import com.example.androidndk.tensorFlow.TensorFlowActivity
 
 class MainActivity : AppCompatActivity() {
 
@@ -41,6 +41,19 @@ class MainActivity : AppCompatActivity() {
         binding.btnGotoCamera.setOnClickListener {
             var intent = Intent(applicationContext, CameraActivity::class.java)
             startActivity(intent)
+        }
+
+        binding.btnPreprocessing.setOnClickListener {
+            var intent = Intent(applicationContext, TensorFlowActivity::class.java)
+            startActivity(intent)
+        }
+
+        //카메라 권한
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 0)
+            return
         }
     }
 
